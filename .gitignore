@@ -1,0 +1,75 @@
+# Build output directory
+out/
+
+# Compiled Object files
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Kernel Module files
+*.ko
+*.mod.c
+.*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Backup files
+*~
+*.swp
+*.swo
+*#
+
+# IDE files
+.vscode/
+*.code-workspace
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Distribution packages
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+
+# Temporary files
+*.tmp
+*.temp

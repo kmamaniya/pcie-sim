@@ -1,0 +1,113 @@
+#
+# PCIe Simulator - Windows Examples Makefile (MinGW/MSYS2)
+#
+# Copyright (c) 2025 Karan Mamaniya <kmamaniya@gmail.com>
+# Licensed under the MIT License
+#
+
+# Compiler configuration
+CC := gcc
+CXX := g++
+CFLAGS := -Wall -Wextra -O2 -std=gnu99 -D_WIN32_WINNT=0x0600
+CXXFLAGS := -Wall -Wextra -O2 -std=c++11 -D_WIN32_WINNT=0x0600
+LDFLAGS := -lkernel32
+
+# Library paths
+LIB_DIR := ../lib
+STATIC_LIB := $(LIB_DIR)/libpcie_sim.a
+SHARED_LIB := $(LIB_DIR)/pcie_sim.dll
+IMPORT_LIB := $(LIB_DIR)/libpcie_sim.dll.a
+
+# Example programs
+C_EXAMPLE := basic_test.exe
+CXX_EXAMPLE := cpp_test.exe
+
+# Build targets
+.PHONY: all static shared clean run-c run-cpp help
+
+all: static
+
+static: $(C_EXAMPLE) $(CXX_EXAMPLE)
+
+shared: $(C_EXAMPLE:.exe=-shared.exe) $(CXX_EXAMPLE:.exe=-shared.exe)
+
+# Build with static library
+$(C_EXAMPLE): basic_test.c $(STATIC_LIB)
+	@echo "Building C example for Windows (static)..."
+	$(CC) $(CFLAGS) -I$(LIB_DIR) -o $@ $< $(STATIC_LIB) $(LDFLAGS)
+
+$(CXX_EXAMPLE): cpp_test.cpp $(STATIC_LIB)
+	@echo "Building C++ example for Windows (static)..."
+	$(CXX) $(CXXFLAGS) -I$(LIB_DIR) -o $@ $< $(STATIC_LIB) $(LDFLAGS)
+
+# Build with shared library
+%-shared.exe: %.c $(IMPORT_LIB)
+	@echo "Building C example for Windows (shared)..."
+	$(CC) $(CFLAGS) -I$(LIB_DIR) -L$(LIB_DIR) -o $@ $< -lpcie_sim $(LDFLAGS)
+
+%-shared.exe: %.cpp $(IMPORT_LIB)
+	@echo "Building C++ example for Windows (shared)..."
+	$(CXX) $(CXXFLAGS) -I$(LIB_DIR) -L$(LIB_DIR) -o $@ $< -lpcie_sim $(LDFLAGS)
+
+# Ensure libraries are built
+$(STATIC_LIB):
+	@echo "Building static library..."
+	$(MAKE) -C $(LIB_DIR) -f Makefile.win static
+
+$(IMPORT_LIB):
+	@echo "Building shared library..."
+	$(MAKE) -C $(LIB_DIR) -f Makefile.win shared
+
+clean:
+	@echo "Cleaning Windows examples..."
+	rm -f *.exe
+
+run-c: $(C_EXAMPLE)
+	@echo "Running C example (Windows simulation mode)..."
+	@echo "Note: Windows version uses simulation backend (no kernel module)"
+	./$(C_EXAMPLE)
+
+run-cpp: $(CXX_EXAMPLE)
+	@echo "Running C++ example (Windows simulation mode)..."
+	@echo "Note: Windows version uses simulation backend (no kernel module)"
+	./$(CXX_EXAMPLE)
+
+run-c-shared: basic_test-shared.exe
+	@echo "Running C example with shared library..."
+	@echo "Note: Ensure pcie_sim.dll is in PATH or current directory"
+	PATH="$(LIB_DIR);$$PATH" ./basic_test-shared.exe
+
+run-cpp-shared: cpp_test-shared.exe
+	@echo "Running C++ example with shared library..."
+	@echo "Note: Ensure pcie_sim.dll is in PATH or current directory"
+	PATH="$(LIB_DIR);$$PATH" ./cpp_test-shared.exe
+
+help:
+	@echo "PCIe Simulator Examples - Windows Build"
+	@echo ""
+	@echo "Requirements:"
+	@echo "  - MinGW-w64 or MSYS2 environment"
+	@echo "  - GCC and G++ compilers"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all          - Build all examples (static linking)"
+	@echo "  static       - Build examples with static library"
+	@echo "  shared       - Build examples with shared library"
+	@echo "  clean        - Clean build artifacts"
+	@echo "  run-c        - Run C example"
+	@echo "  run-cpp      - Run C++ example"
+	@echo "  run-c-shared - Run C example (shared library)"
+	@echo "  run-cpp-shared - Run C++ example (shared library)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  basic_test.c  - C interface demonstration"
+	@echo "  cpp_test.cpp  - C++ interface demonstration"
+	@echo ""
+	@echo "Note:"
+	@echo "  Windows version uses in-memory simulation."
+	@echo "  No kernel module is required or available."
+	@echo ""
+	@echo "Usage:"
+	@echo "  make -f Makefile.win all     # Build examples"
+	@echo "  make -f Makefile.win run-c   # Run C example"
+	@echo "  make -f Makefile.win run-cpp # Run C++ example"

@@ -1,0 +1,135 @@
+#
+# PCIe Simulator - Windows Library Makefile (MinGW/MSYS2)
+#
+# Copyright (c) 2025 Karan Mamaniya <kmamaniya@gmail.com>
+# Licensed under the MIT License
+#
+
+# Compiler configuration
+CC := gcc
+CXX := g++
+AR := ar
+WINDRES := windres
+
+# Compiler flags
+CFLAGS := -Wall -Wextra -O2 -std=gnu99 -D_WIN32_WINNT=0x0600
+CXXFLAGS := -Wall -Wextra -O2 -std=c++11 -D_WIN32_WINNT=0x0600
+LDFLAGS := -lkernel32
+
+# Library configuration
+LIB_NAME := pcie_sim
+STATIC_LIB := lib$(LIB_NAME).a
+SHARED_LIB := $(LIB_NAME).dll
+IMPORT_LIB := lib$(LIB_NAME).dll.a
+
+# Source files
+C_SOURCES := core.c utils.c windows_sim.c
+CXX_SOURCES := device.cpp
+C_OBJECTS := $(C_SOURCES:.c=.o)
+CXX_OBJECTS := $(CXX_SOURCES:.cpp=.o)
+ALL_OBJECTS := $(C_OBJECTS) $(CXX_OBJECTS)
+
+# Headers
+C_HEADERS := api.h types.h pcie_sim.h
+CXX_HEADERS := device.hpp monitor.hpp
+
+# Resource file (for DLL version info)
+RC_FILE := pcie_sim.rc
+RC_OBJECT := $(RC_FILE:.rc=.res)
+
+# Build targets
+.PHONY: all static shared clean install help
+
+all: static shared
+
+static: $(STATIC_LIB)
+
+shared: $(SHARED_LIB)
+
+$(STATIC_LIB): $(ALL_OBJECTS)
+	@echo "Building static library for Windows..."
+	$(AR) rcs $@ $^
+	@echo "Static library created: $@"
+
+$(SHARED_LIB): $(ALL_OBJECTS) $(RC_OBJECT)
+	@echo "Building shared library for Windows..."
+	$(CXX) -shared -Wl,--out-implib,$(IMPORT_LIB) -o $@ $^ $(LDFLAGS)
+	@echo "Shared library created: $@"
+	@echo "Import library created: $(IMPORT_LIB)"
+
+# Compile C source files
+%.o: %.c $(C_HEADERS)
+	@echo "Compiling C (Windows): $<"
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile C++ source files
+%.o: %.cpp $(CXX_HEADERS) $(C_HEADERS)
+	@echo "Compiling C++ (Windows): $<"
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Compile resource file
+%.res: %.rc
+	@echo "Compiling resource: $<"
+	$(WINDRES) -i $< -o $@
+
+clean:
+	@echo "Cleaning Windows library..."
+	rm -f *.o $(STATIC_LIB) $(SHARED_LIB) $(IMPORT_LIB) $(RC_OBJECT)
+
+install: all
+	@echo "Installing Windows library..."
+	@if [ ! -d "$(MINGW_PREFIX)" ]; then \
+		echo "MinGW installation not found. Installing to local directory."; \
+		mkdir -p install/lib install/include/pcie_sim install/bin; \
+		cp $(STATIC_LIB) install/lib/; \
+		cp $(SHARED_LIB) install/bin/; \
+		cp $(IMPORT_LIB) install/lib/; \
+		cp $(C_HEADERS) $(CXX_HEADERS) install/include/pcie_sim/; \
+		echo "Library installed to: ./install/"; \
+	else \
+		cp $(STATIC_LIB) $(MINGW_PREFIX)/lib/; \
+		cp $(SHARED_LIB) $(MINGW_PREFIX)/bin/; \
+		cp $(IMPORT_LIB) $(MINGW_PREFIX)/lib/; \
+		mkdir -p $(MINGW_PREFIX)/include/pcie_sim; \
+		cp $(C_HEADERS) $(CXX_HEADERS) $(MINGW_PREFIX)/include/pcie_sim/; \
+		echo "Library installed to MinGW"; \
+	fi
+
+uninstall:
+	@echo "Uninstalling Windows library..."
+	@if [ -d "$(MINGW_PREFIX)" ]; then \
+		rm -f $(MINGW_PREFIX)/lib/lib$(LIB_NAME)*; \
+		rm -f $(MINGW_PREFIX)/bin/$(LIB_NAME).dll; \
+		rm -rf $(MINGW_PREFIX)/include/pcie_sim; \
+		echo "Library uninstalled from MinGW"; \
+	fi
+	@rm -rf install
+
+help:
+	@echo "PCIe Simulator Library - Windows Build"
+	@echo ""
+	@echo "Requirements:"
+	@echo "  - MinGW-w64 or MSYS2 environment"
+	@echo "  - GCC compiler"
+	@echo "  - Windows SDK headers"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all       - Build static and shared libraries"
+	@echo "  static    - Build static library (.a)"
+	@echo "  shared    - Build shared library (.dll)"
+	@echo "  clean     - Clean build artifacts"
+	@echo "  install   - Install library"
+	@echo "  uninstall - Remove installed library"
+	@echo ""
+	@echo "Components:"
+	@echo "  core.c        - Cross-platform core API"
+	@echo "  windows_sim.c - Windows simulation backend"
+	@echo "  utils.c       - Utility functions"
+	@echo "  device.cpp    - C++ wrapper"
+	@echo ""
+	@echo "Note: Only userspace library is available on Windows."
+	@echo "Kernel module functionality is Linux-specific."
+	@echo ""
+	@echo "Usage:"
+	@echo "  make -f Makefile.win all     # Build all"
+	@echo "  make -f Makefile.win install # Install"
